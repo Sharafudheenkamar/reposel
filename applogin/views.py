@@ -87,11 +87,22 @@ class UserprofileListCreateAPIView(APIView):
 
     def post(self, request):
         print("ddd",request.data)
+                # Check if username already exists
+        username = request.data.get("username")
+        print(username)
+        if Userprofile.objects.filter(username=username).exists():
+            return Response(
+                {"error": f"The username '{username}' is already taken. Please choose another."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        
         serializer = UserprofileSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save(commit=False)
-            serializer.user_type='STUDENT'
-            serializer.save()
+            userprofile = serializer.save()
+            userprofile.user_type = 'STUDENT'
+            userprofile.status='ACTIVE'
+            userprofile.is_active=True # # Set the user_type
+            userprofile.save() 
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
