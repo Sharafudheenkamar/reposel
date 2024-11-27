@@ -152,7 +152,7 @@ class Journals(models.Model):
 
                         # Save the image in JPEG format
                         image_io = BytesIO()
-                        first_page_image.save(image_io, format='JPEG', quality=85) 
+                        first_page_image.save(image_io, format='JPEG', quality=100) 
                         print(first_page_image) # Save as JPEG with quality 85
 
                         # Save the JPEG image to the `image` field
