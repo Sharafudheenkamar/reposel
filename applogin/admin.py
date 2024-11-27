@@ -2,6 +2,7 @@ from django.contrib import admin
 from .models import (
     Userprofile,
     Token,
+    Journals,
 )
 from django.contrib.auth.forms import UserCreationForm, UserChangeForm
 from django.contrib.auth.admin import UserAdmin
@@ -58,10 +59,11 @@ class CustomUserAdmin(UserAdmin):
     )
     form = CustomUserChangeForm
     add_form = CustomUserCreationForm
-    list_display = ("username", "first_name", "user_type")
+    list_display = ("pk","username", "first_name", "user_type")
     search_fields = ("username", "first_name")
     ordering = ("username",)
 
 
 admin.site.register(Userprofile, CustomUserAdmin)
 admin.site.register(Token)
+admin.site.register(Journals)

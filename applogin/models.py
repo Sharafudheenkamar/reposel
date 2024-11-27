@@ -2,6 +2,18 @@ from django.db import models
 from django.contrib.auth.models import AbstractUser
 import random
 import string
+import json
+from pdf2image import convert_from_path
+from PIL import Image
+import os
+from io import BytesIO
+from django.core.files.base import ContentFile
+from PIL import Image
+from pdf2image import convert_from_path
+from io import BytesIO
+import os
+from django.core.files.base import ContentFile
+
 # Create your models here.
 USER_TYPE_CHOICES = {
     ("ADMIN","Admin"),
@@ -107,4 +119,51 @@ class Token(models.Model):
 
     def _str_(self):
         return str(self.user) if self.user else str(self.id)
+
+class Journals(models.Model):
+    user=models.ForeignKey(Userprofile,on_delete=models.CASCADE,null=True,blank=True)
+    image = models.ImageField(null=True,blank=True,upload_to='pdfthumbnail')
+    pdfFile = models.FileField(null=True,blank=True,upload_to='pdfFile')
+    name=models.CharField(max_length=100,null=False,blank=True)
+    title=models.CharField(max_length=100,null=False,blank=True)
+    viewOption=models.CharField(max_length=100,null=False,blank=True)
+
+  
+
+
+    def save(self, *args, **kwargs):
+            # Check if the instance is new or updated
+            is_new = self.pk is None
+
+            # Save the instance initially
+            super().save(*args, **kwargs)
+
+            # Generate a thumbnail only if a new PDF is uploaded and no image exists
+            if self.pdfFile and not self.image and is_new:
+                try:
+                    # Convert the first page of the PDF to an image
+                    pdf_path = self.pdfFile.path
+                    images = convert_from_path(pdf_path, first_page=1, last_page=1)
+                    if images:
+                        first_page_image = images[0]
+
+                        # Resize the image (optional)
+                        first_page_image.thumbnail((300, 300), Image.Resampling.LANCZOS)
+
+                        # Save the image in JPEG format
+                        image_io = BytesIO()
+                        first_page_image.save(image_io, format='JPEG', quality=85) 
+                        print(first_page_image) # Save as JPEG with quality 85
+
+                        # Save the JPEG image to the `image` field
+                        self.image.save(
+                            os.path.basename(pdf_path).replace('.pdf', '_thumbnail.jpg'),
+                            ContentFile(image_io.getvalue()),
+                            save=False  # Avoid infinite recursion
+                        )
+
+                        # Save the instance again to store the image
+                        super().save(update_fields=['image'])  # Only update the `image` field
+                except Exception as e:
+                    print(f"Error generating thumbnail: {e}")
 

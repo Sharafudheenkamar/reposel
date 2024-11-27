@@ -129,3 +129,18 @@ AUTH_USER_MODEL='applogin.Userprofile'
 
 MEDIA_ROOT=os.path.join(BASE_DIR,'media')
 MEDIA_URL='media/'
+
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        # Your authentication classes...
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.AllowAny',  # Global permission to allow any user
+    ],
+    'DEFAULT_THROTTLE_CLASSES': [],
+    'DEFAULT_THROTTLE_RATES': {},
+}
+
+# Disable CSRF for API views by applying this setting
+CSRF_COOKIE_HTTPONLY = True

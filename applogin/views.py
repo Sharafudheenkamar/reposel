@@ -1,7 +1,7 @@
 from django.shortcuts import render
 
 # Create your views here.
-
+from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth import authenticate, login
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK
@@ -9,7 +9,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.views import APIView
 # from user.api_permissions import CustomTokenAuthentication
 # from rest_framework import TokenAuthentication
-from .models import Token, Userprofile
+from .models import Token, Userprofile,Journals
 # from project.utils import utc_today, validate_password
 import json
 from .serializers import *
@@ -22,9 +22,9 @@ class UserLoginapi(APIView):
     authentication_classes = tuple()
 
     def get(self, request):
-        response_dict = {"status": False}
+        response_dict = {"status": "failed"}
         response_dict["logged_in"] = bool(request.user.is_authenticated)
-        response_dict["status"] = True
+        response_dict["status"] = "failed"
         return Response(response_dict, HTTP_200_OK)
 
     def post(self, request):
@@ -48,9 +48,9 @@ class UserLoginapi(APIView):
 
         user = t_user
         print(user)
-        if user.is_active:
-            response_dict["reason"] = "Your login is inactive! Please contact admin"
-            return Response(response_dict, HTTP_200_OK)
+        # if user.is_active:
+        #     response_dict["reason"] = "Your login is inactive! Please contact admin"
+        #     return Response(response_dict, HTTP_200_OK)
 
         session_dict = {"real_user": authenticated.id}
         token, _ = Token.objects.get_or_create(
@@ -66,7 +66,7 @@ class UserLoginapi(APIView):
             "status": user.status,
         }
         response_dict["token"] = token.key
-        response_dict["status"] = True
+        response_dict["status"] = "success"
         return Response(response_dict, HTTP_200_OK)
 
 class Logout(APIView):
@@ -105,4 +105,63 @@ class UserprofileListCreateAPIView(APIView):
             userprofile.save() 
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+
+class JournalsAPIView(APIView):
+    permission_classes=[AllowAny]
+    def get(self, request, pk=None):
+        """
+        Retrieve a single journal or a list of all journals.
+        """
+        if pk:
+            try:
+                journal = Journals.objects.filter(user__id=pk).all()
+                serializer = JournalsSerializerview(journal,many=True)
+                return Response(serializer.data, status=status.HTTP_200_OK)
+            except Journals.DoesNotExist:
+                return Response({"error": "Journal not found"}, status=status.HTTP_404_NOT_FOUND)
+        else:
+            journals = Journals.objects.all()
+            serializer = JournalsSerializerview(journals, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    @csrf_exempt 
+    def post(self, request):
+        """
+        Create a new journal entry.
+        """
+        serializer = JournalsSerializer(data=request.data)
+        print(request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def put(self, request, pk):
+        """
+        Update an existing journal entry.
+        """
+        try:
+            journal = Journals.objects.get(pk=pk)
+        except Journals.DoesNotExist:
+            return Response({"error": "Journal not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = JournalsSerializer(journal, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, pk):
+        """
+        Delete a journal entry.
+        """
+        try:
+            journal = Journals.objects.get(pk=pk)
+            journal.delete()
+            return Response({"message": "Journal deleted successfully"}, status=status.HTTP_204_NO_CONTENT)
+        except Journals.DoesNotExist:
+            return Response({"error": "Journal not found"}, status=status.HTTP_404_NOT_FOUND)
+
 

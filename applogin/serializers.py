@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Userprofile
+from .models import Userprofile,Journals
 
 class UserprofileSerializer(serializers.ModelSerializer):
     class Meta:
@@ -20,6 +20,15 @@ class UserprofileSerializer(serializers.ModelSerializer):
         # Save the user instance
         user.save()
         return user
-    
+class JournalsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Journals
+        fields = ['user','pdfFile','name','title','viewOption']
+
+
+class JournalsSerializerview(serializers.ModelSerializer):
+    class Meta:
+        model = Journals
+        fields = ['user','pdfFile','name','title','image','viewOption']
 
     
