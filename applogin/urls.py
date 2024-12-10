@@ -8,5 +8,6 @@ urlpatterns = [
     path('register', UserprofileListCreateAPIView.as_view(), name='userprofile-list-create'),
     path('journals/', JournalsAPIView.as_view(), name='journals-list'),
     path('journals/<int:pk>/', JournalsAPIView.as_view(), name='journal-detail'),
+    path('latest-images/', LatestImagesView.as_view(), name='latest-images'),
 
 ]

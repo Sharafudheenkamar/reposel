@@ -163,5 +163,13 @@ class JournalsAPIView(APIView):
             return Response({"message": "Journal deleted successfully"}, status=status.HTTP_204_NO_CONTENT)
         except Journals.DoesNotExist:
             return Response({"error": "Journal not found"}, status=status.HTTP_404_NOT_FOUND)
+        
+class LatestImagesView(APIView):
+    def get(self, request):
+        # Fetch the latest 5 Journals with non-null images
+        latest_journals = Journals.objects.filter(image__isnull=False,viewOption='Public').order_by('created_at')[:5]
+        print(latest_journals)
+        serializer = JournalsSerializerview(latest_journals, many=True)
+        return Response(serializer.data)
 
 

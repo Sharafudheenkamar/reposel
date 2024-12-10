@@ -127,6 +127,10 @@ class Journals(models.Model):
     name=models.CharField(max_length=100,null=False,blank=True)
     title=models.CharField(max_length=100,null=False,blank=True)
     viewOption=models.CharField(max_length=100,null=False,blank=True)
+    created_at=models.DateTimeField(auto_now_add=True,null=True,blank=True)
+    updated_at=models.DateTimeField(auto_now=True,null=True,blank=True)
+
+
 
   
 

@@ -66,4 +66,11 @@ class CustomUserAdmin(UserAdmin):
 
 admin.site.register(Userprofile, CustomUserAdmin)
 admin.site.register(Token)
-admin.site.register(Journals)
+
+
+
+class Journals1Admin(admin.ModelAdmin):
+    list_display = ('name', 'title', 'viewOption', 'created_at', 'updated_at')
+
+admin.site.register(Journals, Journals1Admin)
+
