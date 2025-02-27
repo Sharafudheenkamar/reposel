@@ -1,0 +1,95 @@
+.container {
+    display: flex;
+    justify-content: right;
+    height: 100vh;
+    align-items: center;
+    background-image: url(./book1.png);
+    background-repeat: no-repeat;
+    background-size: 100vw 100vh;
+    width: 100%;
+}
+
+.input-container {
+    position: relative;
+    margin-bottom: 30px;
+}
+
+.input-container input {
+    width: 100%;
+    font-size: 16px;
+    padding: 10px 0;
+    border: none;
+    border-bottom: 2px solid rgb(19, 18, 18);
+    background: transparent;
+    outline: none;
+    transition: all 0.3s ease; /* Smooth transition for the input */
+}
+
+.input-container label {
+    position: absolute;
+    top: 50%; /* Initially in the middle of the input */
+    left: 0;
+    font-size: 16px;
+    color: rgb(50,50,50);
+    pointer-events: none; /* Prevents interaction with the label */
+    transform: translateY(-50%);
+    transition: all 0.3s ease; /* Smooth transition for the label */
+}
+
+.input-container input:focus + label,
+.input-container input:valid + label {
+    top: -10px; /* Moves the label above the input */
+    left: 0; /* Aligns the label to the left */
+    font-size: 16px; /* Reduces label size */
+    color: #232527; /* Changes the label color */
+}
+
+a {
+    text-decoration: none;
+    color: black;
+}
+
+.card {
+    width: 280px;
+    padding-top: 80px;
+    padding-bottom: 80px;
+    padding-left: 50px;
+    padding-right: 50px;
+    background: rgba(255, 255, 255, 0.075);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 15px;
+    box-shadow: 0 10px 15px rgba(0, 0, 0, 0.2);
+    text-align: center;
+    margin-right: 100px;
+}
+
+* {
+    padding: 0;
+    margin: 0;
+}
+
+button {
+    width: 100%;
+    height: 35px;
+    color: white;
+    background-color: rgb(28, 26, 26);
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+button:hover {
+    background-color: #5e3c34;
+}
+
+.joh img {
+    border-radius: 50%;
+    width: 100px;
+    height: 100px;
+    margin-bottom: 20px;
+}
+
+#check {
+    margin-left: 50px;
+}

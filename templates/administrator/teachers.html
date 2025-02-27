@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teacher Details</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        table, th, td {
+            border: 1px solid black;
+        }
+        th, td {
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #896044;
+        }
+        table tr:hover {
+            background-color: #f1f1f1;
+        }
+        button {
+            padding: 10px 15px;
+            background-color: #232523;
+            color: white;
+            border: none;
+            cursor: pointer;
+            margin: 10px 0;
+        }
+        button:hover {
+            background-color: #603934;
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none; /* Hidden by default */
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgb(0,0,0);
+            background-color: rgba(0,0,0,0.4); /* Black w/opacity */
+            padding-top: 60px;
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: 5% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+        }
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+        .close:hover,
+        .close:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        .form-input {
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0;
+            box-sizing: border-box;
+        }
+        .form-button {
+            padding: 10px 20px;
+            background-color: #121312;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        .form-button:hover {
+            background-color: #603934;
+        }
+    </style>
+</head>
+<body>
+
+    <h2>Teacher Details</h2>
+
+    <!-- Add Teacher Button -->
+    <button onclick="openModal()">Add Teacher</button>
+
+    <!-- Teacher Details Table -->
+    <table id="teacherTable">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Education Qualification</th>
+                <th>Experience</th>
+                <th>Phone No</th>
+                <th>Email</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Sample Teacher Details -->
+            <tr>
+                <td>1</td>
+                <td>John Doe</td>
+                <td>M.Sc. in Mathematics</td>
+                <td>5 years</td>
+                <td>123-456-7890</td>
+                <td>john.doe@example.com</td>
+            </tr>
+            <tr>
+                <td>2</td>
+                <td>Jane Smith</td>
+                <td>B.A. in English</td>
+                <td>8 years</td>
+                <td>987-654-3210</td>
+                <td>jane.smith@example.com</td>
+            </tr>
+            <tr>
+                <td>3</td>
+                <td>Samuel Lee</td>
+                <td>M.A. in History</td>
+                <td>3 years</td>
+                <td>555-123-9876</td>
+                <td>samuel.lee@example.com</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <!-- Modal for adding teacher -->
+    <div id="myModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <h2>Add Teacher</h2>
+            <form id="teacherForm">
+                <input type="text" id="teacherId" class="form-input" placeholder="Enter Teacher ID" required>
+                <input type="text" id="teacherName" class="form-input" placeholder="Enter Teacher Name" required>
+                <input type="text" id="educationQualification" class="form-input" placeholder="Enter Education Qualification" required>
+                <input type="text" id="experience" class="form-input" placeholder="Enter Experience (in years)" required>
+                <input type="text" id="phoneNo" class="form-input" placeholder="Enter Phone No" required>
+                <input type="email" id="email" class="form-input" placeholder="Enter Email" required>
+                <button type="button" class="form-button" onclick="addTeacherDetails()">Add Teacher</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Open the modal
+        function openModal() {
+            document.getElementById("myModal").style.display = "block";
+        }
+
+        // Close the modal
+        function closeModal() {
+            document.getElementById("myModal").style.display = "none";
+        }
+
+        // Add teacher details to the table
+        function addTeacherDetails() {
+            // Get input values
+            let teacherId = document.getElementById("teacherId").value;
+            let teacherName = document.getElementById("teacherName").value;
+            let educationQualification = document.getElementById("educationQualification").value;
+            let experience = document.getElementById("experience").value;
+            let phoneNo = document.getElementById("phoneNo").value;
+            let email = document.getElementById("email").value;
+
+            // Add the new teacher details to the table
+            let table = document.getElementById("teacherTable").getElementsByTagName('tbody')[0];
+            let newRow = table.insertRow();
+
+            newRow.insertCell(0).textContent = teacherId;
+            newRow.insertCell(1).textContent = teacherName;
+            newRow.insertCell(2).textContent = educationQualification;
+            newRow.insertCell(3).textContent = experience;
+            newRow.insertCell(4).textContent = phoneNo;
+            newRow.insertCell(5).textContent = email;
+
+            // Clear form inputs
+            document.getElementById("teacherForm").reset();
+
+            // Close the modal
+            closeModal();
+        }
+    </script>
+
+</body>
+</html>

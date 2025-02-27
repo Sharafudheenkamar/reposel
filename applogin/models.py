@@ -14,114 +14,55 @@ from io import BytesIO
 import os
 from django.core.files.base import ContentFile
 
-# Create your models here.
-USER_TYPE_CHOICES = {
-    ("ADMIN","Admin"),
-    ("INSTITUTE","Institute"),
-    ("TEACHER","Teacher"),
-    ("STUDENT","Student"),
+class Login(models.Model):
 
-}
-STATUS_CHOICES = {
-    ("ACTIVE","Active"),
-    ("DEACTIVE","Deactive"),
-}
-class Userprofile(AbstractUser):
-    #username
-    #password
-    #first_name
-    #email
-    name=models.CharField(max_length=100,null=False,blank=True)
-    profile_image = models.ImageField(null=True,blank=True,upload_to='studentimages')
-    phone_number=models.CharField(max_length=100,null=False,blank=True)
-    stream=models.CharField(max_length=100,null=False,blank=True)
-    year=models.CharField(max_length=100,null=False,blank=True)
-    status =  models.CharField(max_length=20,null=False,choices=STATUS_CHOICES)
-    is_active = models.BooleanField(max_length=20,null=False,default=True)
-    user_type = models.CharField(max_length=20,null=False,choices=USER_TYPE_CHOICES)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+  username = models.CharField(max_length=255,null=True,blank=True)
+  password= models.CharField(max_length=255,null=True,blank=True)
+  usertype=models.CharField(max_length=255,null=True,blank=True)
 
 
-class Token(models.Model):
-    key = models.CharField(max_length=50, unique=True)
-    user = models.OneToOneField(
-        Userprofile,
-        related_name="auth_tokens",
-        on_delete=models.CASCADE,
-        verbose_name="user",
-        unique=True,
-        null=True,
-        blank=True,
-    )
-    created = models.DateTimeField(auto_now_add=True)
-    updated = models.DateTimeField(auto_now=True)
-    session_dict = models.TextField(null=False, default="{}")
+class Teacher(models.Model):
+   t_name=models.CharField(max_length=255,null=True,blank=True)
+   email=models.CharField(max_length=255,null=True,blank=True)
+   p_phno=models.BigIntegerField(null=True,blank=True)
+   qualification=models.CharField(max_length=255,null=True,blank=True)
+   subject=models.CharField(max_length=255,null=True,blank=True)
+   experience=models.BigIntegerField(null=True,blank=True)
+   t_LID=models.ForeignKey(Login,on_delete=models.CASCADE,null=True,blank=True)
 
-    dict_ready = False
-    data_dict = None
 
-    def _init_(self, *args, **kwargs):
-        self.dict_ready = False
-        self.data_dict = None
-        super(Token, self)._init_(*args, **kwargs)
 
-    def generate_key(self):
-        return "".join(
-            random.choice(
-                string.ascii_lowercase + string.digits + string.ascii_uppercase
-            )
-            for i in range(40)
-        )
+class Student(models.Model):
+  st_name=models.CharField(max_length=255,null=True,blank=True)
+  classs=models.CharField(max_length=255,null=True,blank=True)
+  stream=models.CharField(max_length=255,null=True,blank=True)
+  email=models.CharField(max_length=255,null=True,blank=True)
+  st_phno=models.BigIntegerField(null=True,blank=True)
+  st_LID=models.ForeignKey(Login,on_delete=models.CASCADE,null=True,blank=True)
+#   classroomid=models.ManyToManyField(Classroom,on_delete=models.CASCADE,null=True,blank=True)
+  selscore=models.FloatField(null=True,blank=True)
 
-    def save(self, *args, **kwargs):
-        if not self.key:
-            new_key = self.generate_key()
-            while type(self).objects.filter(key=new_key).exists():
-                new_key = self.generate_key()
-            self.key = new_key
-        return super(Token, self).save(*args, **kwargs)
+class Classroom(models.Model):
+    teacherid=models.ForeignKey(Teacher,on_delete=models.CASCADE,null=True,blank=True)
+    name = models.CharField(max_length=255)
+    capacity = models.IntegerField()
+    students= models.ManyToManyField(Student)
 
-    def read_session(self):
-        if self.session_dict == "null":
-            self.data_dict = {}
-        else:
-            self.data_dict = json.loads(self.session_dict)
-        self.dict_ready = True
+class Parent(models.Model):
+   p_name=models.CharField(max_length=255,null=True,blank=True)
+   email=models.CharField(max_length=255,null=True,blank=True)
+   p_phno=models.BigIntegerField(null=True,blank=True)
+   relation=models.CharField(max_length=255,null=True,blank=True)
+   p_LID=models.ForeignKey(Login,on_delete=models.CASCADE,null=True,blank=True)
+   student_id=models.ManyToManyField(Student,null=True,blank=True)
 
-    def update_session(self, tdict, save=True, clear=False):
-        if not clear and not self.dict_ready:
-            self.read_session()
-        if clear:
-            self.data_dict = tdict
-            self.dict_ready = True
-        else:
-            for key, value in tdict.items():
-                self.data_dict[key] = value
-        if save:
-            self.write_back()
 
-    def set(self, key, value, save=True):
-        if not self.dict_ready:
-            self.read_session()
-        self.data_dict[key] = value
-        if save:
-            self.write_back()
 
-    def write_back(self):
-        self.session_dict = json.dumps(self.data_dict)
-        self.save()
+   
 
-    def get(self, key, default=None):
-        if not self.dict_ready:
-            self.read_session()
-        return self.data_dict.get(key, default)
-
-    def _str_(self):
-        return str(self.user) if self.user else str(self.id)
 
 class Journals(models.Model):
-    user=models.ForeignKey(Userprofile,on_delete=models.CASCADE,null=True,blank=True)
+    user=models.ForeignKey(Login,on_delete=models.CASCADE,null=True,blank=True)
     image = models.ImageField(null=True,blank=True,upload_to='pdfthumbnail')
     pdfFile = models.FileField(null=True,blank=True,upload_to='pdfFile')
     name=models.CharField(max_length=100,null=False,blank=True)
@@ -129,7 +70,6 @@ class Journals(models.Model):
     viewOption=models.CharField(max_length=100,null=False,blank=True)
     created_at=models.DateTimeField(auto_now_add=True,null=True,blank=True)
     updated_at=models.DateTimeField(auto_now=True,null=True,blank=True)
-
 
 
   
@@ -170,4 +110,68 @@ class Journals(models.Model):
                         super().save(update_fields=['image'])  # Only update the `image` field
                 except Exception as e:
                     print(f"Error generating thumbnail: {e}")
+                
+from django.db import models
+from rest_framework import serializers, status
+from rest_framework.views import APIView
+from rest_framework.response import Response
 
+# Models
+
+
+class Task(models.Model):
+    teacherid=models.ForeignKey(Teacher,on_delete=models.CASCADE,null=True,blank=True)
+    title = models.CharField(max_length=255)
+    description = models.TextField()
+    classroom = models.ForeignKey(Classroom, on_delete=models.CASCADE, related_name='tasks')
+
+class Studenttask(models.Model):
+    studentid=models.ForeignKey(Student,on_delete=models.CASCADE,null=True,blank=True)
+    taskid=models.ForeignKey(Task,on_delete=models.CASCADE,null=True,blank=True)
+    taskfile=models.FileField(upload_to='studentcompletedtask',null=True,blank=True)
+    taskdescription=models.CharField(max_length=100,null=True,blank=True)
+    taskmarks=models.IntegerField(null=True,blank=True)
+    taskstatus=models.CharField(max_length=100,null=True,blank=True)
+class Studenttaskcompleted(models.Model):
+    studentid=models.ForeignKey(Student,on_delete=models.CASCADE,null=True,blank=True)
+    taskid=models.ForeignKey(Task,on_delete=models.CASCADE,null=True,blank=True)
+    taskfile=models.FileField(upload_to='studentcompletedtask',null=True,blank=True)
+    taskdescription=models.CharField(max_length=100,null=True,blank=True)
+    taskmarks=models.IntegerField(null=True,blank=True)
+    taskstatus=models.CharField(max_length=100,null=True,blank=True)
+
+class Studentclass:
+    studentid=models.ForeignKey(Student,on_delete=models.CASCADE,null=True,blank=True)
+    classroomid=models.ForeignKey(Classroom,on_delete=models.CASCADE,null=True,blank=True)
+    studentstatus=models.CharField(max_length=100,null=True,blank=True)
+    
+
+from django.db import models
+
+class ChatHistory(models.Model):
+
+    user_query = models.TextField()  # User's query
+    chatbot_response = models.TextField()  # Chatbot's response
+    timestamp = models.DateTimeField(auto_now_add=True)  # Timestamp of the interaction
+
+    def _str_(self):
+        return f"Chat at {self.timestamp}"
+    
+
+
+class Chat(models.Model):
+    sender = models.ForeignKey(
+        'Login', 
+        related_name='sent_messages', 
+        on_delete=models.CASCADE
+    )
+    receiver = models.ForeignKey(
+        'Login', 
+        related_name='received_messages', 
+        on_delete=models.CASCADE
+    )
+    message = models.TextField()
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    def _str_(self):
+        return f"From {self.sender.username} to {self.receiver.username}"

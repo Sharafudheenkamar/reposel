@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f9;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            background-color: #50362a;
+            color: white;
+        }
+
+        header h1 {
+            margin: 0;
+        }
+
+        header .logout {
+            background-color: #221f1f;
+            color: white;
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        header .logout:hover {
+            background-color: #c0392b;
+        }
+
+        .container {
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            transition: all 0.3s ease;
+        }
+
+        .cards {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            align-items: center;
+            transition: transform 0.3s ease, margin 0.3s ease;
+            position: relative;
+            left: 0;
+            padding-top: 50px;
+        }
+
+        .card {
+            background-color: rgb(250, 250, 250);
+            border: 1px solid #c4beb5;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 8px 10px rgba(0, 0, 0, 0.1);
+            width: 200px;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+        }
+
+        .card h3 {
+            margin: 0;
+            font-size: 18px;
+            color: #333;
+        }
+
+        .main-content {
+            display: none;
+            padding: 20px;
+            margin-top: 50px;
+            width: 100%;
+            max-width: 600px;
+            background-color: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            box-shadow: 0 8px 10px rgba(0, 0, 0, 0.1);
+            margin-left: 20px;
+        }
+
+        .cards.sidebar-active {
+            position: relative;
+            left: -30px;
+        }
+
+        .main-content.active {
+            display: block;
+        }
+
+        .container.sidebar-active {
+            justify-content: flex-start;
+        }
+
+        .add-button {
+            display: inline-block;
+            margin-top: 15px;
+            padding: 10px 15px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .add-button:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>Admin Dashboard</h1>
+        <a href="#" class="logout">Logout</a>
+    </header>
+    <div class="container" id="container">
+        <div class="cards" id="cards">
+            <div class="card" onclick="showContent('Teachers', 'teacherList')">
+                <h3>Teachers</h3>
+            </div>
+            <div class="card" onclick="showContent('Students', 'studentList')">
+                <h3>Students</h3>
+            </div>
+            <div class="card" onclick="showContent('Parents', 'parentList')">
+                <h3>Parents</h3>
+            </div>
+            <div class="card" onclick="showContent('Journals', 'journalList')">
+                <h3>Journals</h3>
+            </div>
+        </div>
+
+        <div class="main-content" id="mainContent">
+            <h2 id="contentTitle">New Entities</h2>
+            <div id="contentBody">
+                <p>Select a category to view details.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+
+        function showContent(category, listId) {
+            const cards = document.getElementById('cards');
+            const container = document.getElementById('container');
+            const mainContent = document.getElementById('mainContent');
+            const contentTitle = document.getElementById('contentTitle');
+            const contentBody = document.getElementById('contentBody');
+
+            cards.classList.add('sidebar-active');
+            container.classList.add('sidebar-active');
+            mainContent.classList.add('active');
+
+            contentTitle.textContent = category;
+
+            let content = document.getElementById(listId).innerHTML;
+
+            // Add "Add Teacher" button if the selected category is Teachers
+            if (category === 'Teachers') {
+                content += `<button class="add-button" onclick="addTeacher()">Add Teacher</button>`;
+            }
+
+            contentBody.innerHTML = content;
+        }
+
+        function addTeacher() {
+            window.location.href = '/addteacher';
+        }
+
+        function editTeacher(id) {
+            window.location.href = `/editteacher/${id}`;
+        }
+
+        function deleteTeacher(id) {
+            if (confirm("Are you sure you want to delete this teacher?")) {
+                fetch(`/deleteteacher/${id}`, { method: 'DELETE' })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            alert("Teacher deleted successfully");
+                            location.reload();
+                        } else {
+                            alert("Error deleting teacher");
+                        }
+                    })
+                    .catch(error => console.error("Error:", error));
+            }
+        }
+
+
+    </script>
+
+    <!-- Hidden Lists to Load Data -->
+    <div style="display: none;">
+        <ul id="studentList">
+            {% for student in st %}
+            <li>{{ student.name }}</li>
+            {% empty %}
+            <li>No students found.</li>
+            {% endfor %}
+        </ul>
+
+        <ul id="parentList">
+            {% for parent in pa %}
+            <li>{{ parent.p_name }} ({{ parent.email }})</li>
+            {% empty %}
+            <li>No parents found.</li>
+            {% endfor %}
+        </ul>
+
+        <ul id="teacherList">
+            {% for teacher in te %}
+            <li>
+                {{ teacher.t_name }}
+                <button class="edit-button" onclick="editTeacher('{{ teacher.id }}')">Edit</button>
+                <button class="delete-button" onclick="deleteTeacher('{{ teacher.id }}')">Delete</button>
+            </li>
+            {% empty %}
+            <li>No teachers found.</li>
+            {% endfor %}
+        </ul>
+
+        <ul id="journalList">
+            <li>No journals available.</li>
+        </ul>
+    </div>
+</body>
+
+</html>
