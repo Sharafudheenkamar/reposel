@@ -19,7 +19,12 @@ from .models import *
 import json
 from .serializers import *
 from rest_framework import status
-
+def login_required(view_func):
+    def wrapper(request, *args, **kwargs):
+        if request.session.get('userid') is None:
+            return redirect('login')  # Redirect to login page if not logged in
+        return view_func(request, *args, **kwargs)
+    return wrapper
 class LoginPage(View):
     def get(self, request):
         return render(request, "administrator/login.html")
@@ -28,11 +33,17 @@ class LoginPage(View):
         password=request.POST['password']
         try:
             login_obj=Login.objects.get(username=username,password=password)
+            request.session['userid']=login_obj.id
+            print(request.session['login_obj'])
             if login_obj.usertype=="admin":
                 return HttpResponse ('''<script>alert("welcome to adminhome");window.location="admindashboard"</script>''')
         except:
             return HttpResponse ('''<script>alert("invalid user");window.location="/"</script>''')
 
+class LogoutView(View):
+    def get(self, request):
+        request.session.flush()  # Clears all session data
+        return redirect('login') 
 from django.shortcuts import render, redirect
 from django.views import View
 from .models import Teacher, Login

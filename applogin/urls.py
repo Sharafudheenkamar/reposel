@@ -5,6 +5,7 @@ from .views import *
 urlpatterns = [
     path('', LoginPage.as_view(), name="login"),
     path('admindashboard',AdmindashboardPage.as_view(),name="admindashboard"),
+    path('logout',LogoutView.as_view(),name="logout"),
     path('editteacher/<int:id>/', edit_teacher, name='edit_teacher'),
     path('deleteteacher/<int:id>/', delete_teacher, name='delete_teacher'),
 
