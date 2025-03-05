@@ -26,10 +26,7 @@ class TaskSerializer(serializers.ModelSerializer):
 from rest_framework import serializers
 from .models import Classroom
 
-class ClassroomSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Classroom
-        fields = ['id', 'teacherid', 'name', 'capacity']
+
 
 
 class StudentSerializer(serializers.ModelSerializer):
@@ -37,12 +34,22 @@ class StudentSerializer(serializers.ModelSerializer):
         model = Student
         fields = '__all__'  # Or specify fields like ['st_name', 'email', 'classs']
 
+class ClassroomSerializer(serializers.ModelSerializer):
+    students = StudentSerializer(many=True) 
+    class Meta:
+        model = Classroom
+        fields = ['id', 'teacherid', 'name', 'capacity','students']
+
 class ParentSerializer(serializers.ModelSerializer):
     parent_loginid=serializers.CharField(source='p_LID.id')
     class Meta:
         model = Parent
         fields = '__all__'
+class ParentSerializer1(serializers.ModelSerializer):
 
+    class Meta:
+        model = Parent
+        fields = '__all__'
 class StudentTaskCompletedSerializer(serializers.ModelSerializer):
     class Meta:
         model = Studenttaskcompleted
@@ -76,7 +83,7 @@ class ChattedUsersSerializer1(serializers.ModelSerializer):
 class TeacherSerializer(serializers.ModelSerializer):
     class Meta:
         model = Teacher
-        fields = ['id', 'name', 't_LID']  # Include teacher's login ID (t_LID assumed)
+        fields = ['id', 't_name', 't_LID','email','p_phno','qualification','subject','experience']  # Include teacher's login ID (t_LID assumed)
 
 class StudentMentorSerializer(serializers.ModelSerializer):
     mentors = serializers.SerializerMethodField()

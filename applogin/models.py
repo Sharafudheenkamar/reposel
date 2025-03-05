@@ -54,7 +54,7 @@ class Parent(models.Model):
    p_phno=models.BigIntegerField(null=True,blank=True)
    relation=models.CharField(max_length=255,null=True,blank=True)
    p_LID=models.ForeignKey(Login,on_delete=models.CASCADE,null=True,blank=True)
-   student_id=models.ManyToManyField(Student,null=True,blank=True)
+   student_id=models.ManyToManyField(Student,blank=True)
 
 
 
@@ -175,3 +175,9 @@ class Chat(models.Model):
 
     def _str_(self):
         return f"From {self.sender.username} to {self.receiver.username}"
+    
+
+class Notifications(models.Model):
+    userid=models.ForeignKey(Login,on_delete=models.CASCADE,null=True,blank=True)
+    notification=models.CharField(max_length=100,null=True,blank=True)
+    notification_date=models.DateField(auto_now=True,blank=True,null=True)

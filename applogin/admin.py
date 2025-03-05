@@ -10,6 +10,7 @@ admin.site.register(Parent)
 admin.site.register(Teacher)
 admin.site.register(Classroom)
 admin.site.register(Task)
+admin.site.register(Studenttask)
 
 
 

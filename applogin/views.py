@@ -19,30 +19,49 @@ from .models import *
 import json
 from .serializers import *
 from rest_framework import status
+from functools import wraps
+from django.shortcuts import redirect
+from functools import wraps
+from django.shortcuts import redirect
+
 def login_required(view_func):
+    @wraps(view_func)
     def wrapper(request, *args, **kwargs):
+        # Check if request is part of a class-based view (CBV)
+        if hasattr(request, "request"):
+            request = request.request  # Extract the actual request object
+
         if request.session.get('userid') is None:
             return redirect('login')  # Redirect to login page if not logged in
         return view_func(request, *args, **kwargs)
     return wrapper
+
 class LoginPage(View):
     def get(self, request):
         return render(request, "administrator/login.html")
     def post(self,request):
         username=request.POST['username']
         password=request.POST['password']
+        print("aaaaaaaaaaaaaaaaaaaaaa",username,password)
         try:
-            login_obj=Login.objects.get(username=username,password=password)
+            login_obj=Login.objects.filter(username=username,password=password).first()
             request.session['userid']=login_obj.id
-            print(request.session['login_obj'])
+            print(request.session['userid'])
             if login_obj.usertype=="admin":
                 return HttpResponse ('''<script>alert("welcome to adminhome");window.location="admindashboard"</script>''')
         except:
             return HttpResponse ('''<script>alert("invalid user");window.location="/"</script>''')
-
+from django.contrib.auth import logout 
 class LogoutView(View):
     def get(self, request):
-        request.session.flush()  # Clears all session data
+        print("Before logout:", request.session.items())  # Debugging: Check session before logout
+        
+        logout(request)  # Clears authentication session
+        request.session.flush()
+        request.session.delete()  # Completely clears session data
+        
+        print("After logout:", request.session.items())  # Debugging: Check session after logout
+        
         return redirect('login') 
 from django.shortcuts import render, redirect
 from django.views import View
@@ -95,8 +114,13 @@ def delete_teacher(request, id):
     else:
         teacher.delete()
         return redirect('teacher_list')
-
+from django.utils.decorators import method_decorator
+from django.utils.decorators import method_decorator
+from django.views.decorators.cache import never_cache
+@method_decorator(never_cache, name='dispatch') 
+@method_decorator(login_required, name='dispatch')
 class AdmindashboardPage(View):
+     
     def get(self,request):
         st=Student.objects.all()
         pa=Parent.objects.all()
@@ -253,7 +277,12 @@ class ClassroomAPIView(APIView):
         return Response(serializer.data)
 
     def post(self, request):
-        serializer = ClassroomSerializer(data=request.data)
+        print(request.data)
+        data={}
+        data=request.data
+        c=Teacher.objects.filter(t_LID__id=request.data['id']).first()
+        data['teacherid']=c.id
+        serializer = ClassroomSerializer(data=data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -267,16 +296,16 @@ class ClassroomDetailAPIView(APIView):
             return None
 
     def get(self, request, pk):
-        classroom = self.get_object(pk)
+        classroom = Classroom.objects.filter(teacherid__t_LID__id=pk).all()
         if not classroom:
-            return Response({'error': 'Classroom not found'}, status=status.HTTP_404_NOT_FOUND)
-        serializer = ClassroomSerializer(classroom)
+            return Response({'error': 'Classroom not found'}, status=status.HTTP_200_OK)
+        serializer = ClassroomSerializer(classroom,many=True)
         return Response(serializer.data)
 
     def put(self, request, pk):
         classroom = self.get_object(pk)
         if not classroom:
-            return Response({'error': 'Classroom not found'}, status=status.HTTP_404_NOT_FOUND)
+            return Response({'error': 'Classroom not found'}, status=status.HTTP_200_OK)
         serializer = ClassroomSerializer(classroom, data=request.data)
         if serializer.is_valid():
             serializer.save()
@@ -288,7 +317,7 @@ class ClassroomDetailAPIView(APIView):
         if not classroom:
             return Response({'error': 'Classroom not found'}, status=status.HTTP_404_NOT_FOUND)
         classroom.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response(status=status.HTTP_200_OK)
 
 class TaskAPIView(APIView):
     def get(self, request):
@@ -472,25 +501,29 @@ class ClassroomAPI(APIView):
 
 class Viewprofileapi(APIView):
     def get(self, request,id):
+        print(id)
+        response_data={}
         try:
             user = Login.objects.get(id=id)
+            print("yyyy",user.usertype)
             if user.usertype=='student':
-                student = Student.objects.get(st_LID=user)
+                student = Student.objects.get(st_LID__id=user.id)
+
                 response_data = {
                     "username": student.st_LID.username,
                     "password": student.st_LID.password,
                     "type": student.st_LID.usertype,
-                    "address": user.address,
+
                     "st_name": student.st_name ,
                     "classs": student.classs,
                     "stream": student.stream,
                     "email": student.email,
                     "st_phno": student.st_phno,
-                    "st_LID": student.st_LID,
+                    "st_LID": student.st_LID.id,
                     "selscore": student.selscore}
                 return Response(response_data, status=status.HTTP_200_OK)
             elif user.usertype=='parent':
-                student = Parent.objects.get(p_LID=user)
+                student = Parent.objects.get(p_LID__id=user.id)
                 response_data = {
                     "username": student.p_LID.username,
                     "password": student.p_LID.password,
@@ -500,11 +533,11 @@ class Viewprofileapi(APIView):
 
                     "email": student.email,
                     "p_phno": student.p_phno,
-                    "student_id": student.student_id,
+
                     }
                 return Response(response_data, status=status.HTTP_200_OK)
             elif user.usertype=='mentor':
-                student = Teacher.objects.get(t_LID=user)
+                student = Teacher.objects.get(t_LID__id=user.id)
                 response_data = {
                     "username": student.t_LID.username,
                     "password": student.t_LID.password,
@@ -529,28 +562,32 @@ class Viewprofileapi(APIView):
     def put(self, request, id):
         try:
             user = get_object_or_404(Login, id=id)
+            print(user)
+            print(request.data)
+            print(user.usertype)
             data = request.data  # Get the data from request
 
             if user.usertype == 'student':
-                student = get_object_or_404(Student, st_LID=user)
+                student = get_object_or_404(Student, st_LID__id=user.id)
+                print(student)
                 student.st_name = data.get("st_name", student.st_name)
                 student.classs = data.get("classs", student.classs)
                 student.stream = data.get("stream", student.stream)
                 student.email = data.get("email", student.email)
                 student.st_phno = data.get("st_phno", student.st_phno)
                 student.selscore = data.get("selscore", student.selscore)
-                user.address = data.get("address", user.address)
+
                 student.save()
                 user.save()
             elif user.usertype == 'parent':
-                parent = get_object_or_404(Parent, p_LID=user)
+                parent = get_object_or_404(Parent, p_LID__id=user.id)
                 parent.p_name = data.get("p_name", parent.p_name)
                 parent.email = data.get("email", parent.email)
                 parent.p_phno = data.get("p_phno", parent.p_phno)
                 parent.student_id = data.get("student_id", parent.student_id)
                 parent.save()
             elif user.usertype == 'mentor':
-                teacher = get_object_or_404(Teacher, t_LID=user)
+                teacher = get_object_or_404(Teacher, t_LID__id=user.id)
                 teacher.t_name = data.get("t_name", teacher.t_name)
                 teacher.email = data.get("email", teacher.email)
                 teacher.p_phno = data.get("p_phno", teacher.p_phno)
@@ -565,19 +602,40 @@ class Viewprofileapi(APIView):
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
-class ParentPageAPI(APIView):
+class StudentPageAPI(APIView):
     def get(self, request):
         students = Student.objects.all()
         serializer = StudentSerializer(students, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-class StudentPageAPI(APIView):
+class ParentPageAPI(APIView):
     def get(self, request):
         parents = Parent.objects.all()
         serializer = ParentSerializer(parents, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+from .models import Parent, Login
+from .serializers import ParentSerializer
 
-
+class ParentRegistrationView(APIView):
+    print("*****")
+    def post(self, request):
+        print("###############",request.data)
+        user_serial = ParentSerializer1(data=request.data)
+        login_serial = Loginserializer(data=request.data)
+        data_valid = user_serial.is_valid()
+        login_valid = login_serial.is_valid()
+        print("---dta------>", data_valid)
+        print("---login------>", login_valid)
+        if data_valid and login_valid:
+            print("------------>")
+            login_profile = login_serial.save(usertype='parent')
+            user_serial.save(p_LID=login_profile)
+            return Response(user_serial.data, status=status.HTTP_201_CREATED)
+        return Response({'login_error': login_serial.errors if not login_valid else None,
+                         'user_error': user_serial.errors if not data_valid else None}, status=status.HTTP_400_BAD_REQUEST)
 
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -619,6 +677,25 @@ class AddStudentsToClassroomAPIView(APIView):
 
         serializer = ClassroomSerializer(classroom)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def delete(self, request, classroom_id):
+            """Remove students from a classroom."""
+            classroom = get_object_or_404(Classroom, id=classroom_id)
+            student_ids = request.data.get('student_ids', [])
+
+            if not isinstance(student_ids, list):
+                return Response({"error": "student_ids should be a list of student IDs."}, status=status.HTTP_400_BAD_REQUEST)
+
+            students = Student.objects.filter(id__in=student_ids)
+
+            if not students.exists():
+                return Response({"error": "No valid students found with the provided IDs."}, status=status.HTTP_400_BAD_REQUEST)
+
+            classroom.students.remove(*students)  # Remove multiple students
+            classroom.save()
+
+            serializer = ClassroomSerializer(classroom)
+            return Response(serializer.data, status=status.HTTP_200_OK)
 # API View to get classrooms of a student
 class StudentClassroomsView(APIView):
     def get(self, request, student_id):
@@ -634,7 +711,31 @@ class StudentClassroomsView(APIView):
         # Return response
         return Response(serializer.data, status=status.HTTP_200_OK)
     
+class classroomstudentsView(APIView):
+    def get(self, request, classroom_id):
+        # Fetch the student object
+        student = get_object_or_404(Student, st_LID__id=student_id)
 
+        # Get all classrooms where this student is enrolled
+        classrooms = Classroom.objects.filter(students=student)
+
+        # Serialize the classrooms data
+        serializer = ClassroomSerializer(classrooms, many=True)
+
+        # Return response
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+
+class ClassroomStudentsView(APIView):
+    def get(self, request, classroom_id):
+        # Fetch classroom or return 404 if not found
+        classroom = get_object_or_404(Classroom, id=classroom_id)
+        
+        # Serialize classroom along with students
+        serializer = ClassroomSerializer(classroom)
+        
+        return Response(serializer.data, status=status.HTTP_200_OK)
 # API View to get tasks of a classroom
 class ClassroomTasksView(APIView):
     def get(self, request, classroom_id):
@@ -649,6 +750,32 @@ class ClassroomTasksView(APIView):
 
         # Return response
         return Response(serializer.data, status=status.HTTP_200_OK)
+    def post(self, request, classroom_id):
+        # Fetch the classroom object
+        classroom = get_object_or_404(Classroom, id=classroom_id)
+
+        # Add classroom to request data
+        request.data['classroom'] = classroom.id
+
+        # Serialize and validate data
+        serializer = TaskSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+class ClassroomTasksView1(APIView):    
+    def delete(self, request, classroom_id, task_id):
+        # Fetch the classroom object
+        classroom = get_object_or_404(Classroom, id=classroom_id)
+
+        # Fetch the task assigned to this classroom
+        task = get_object_or_404(Task, id=task_id, classroom=classroom)
+
+        # Delete the task
+        task.delete()
+
+        return Response({"message": "Task deleted successfully"}, status=status.HTTP_204_NO_CONTENT)
 class ClassroomteacherTasksView(APIView):
     def get(self, request, classroom_id,teacher_id):
         # Fetch the classroom object
@@ -728,7 +855,7 @@ class CompletedTaskListView(APIView):
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
-        
+from rest_framework import status        
 
 class AddStudentsToParentView(APIView):
         def get(self, request, parent_id):
@@ -740,14 +867,15 @@ class AddStudentsToParentView(APIView):
 
         def post(self, request, parent_id):
             """Add students to a parent"""
+            print(request.data)
             parent = get_object_or_404(Parent, id=parent_id)
             
             # Get list of student IDs from request data
-            student_ids = request.data.get('student_ids', [])
+            student_ids = request.data.get('Student_id', [])
 
-            if not student_ids:
-                return Response({"error": "No student IDs provided"}, status=status.HTTP_400_BAD_REQUEST)
-
+            # Ensure student_ids is always a list
+            if isinstance(student_ids, str):  
+                student_ids = [student_ids] 
             # Fetch student objects and add them to the parent
             students = Student.objects.filter(id__in=student_ids)
 
@@ -789,8 +917,10 @@ class ParentStudentsView(APIView):
 
     def get(self, request, parent_id):
         """Retrieve students for a given parent"""
-        parent = get_object_or_404(Parent, id=parent_id)  # Ensure parent exists
-        students = parent.student_id.all()  # Fetch students related to this parent
+        
+        parent = get_object_or_404(Parent, p_LID__id=parent_id)  # Ensure parent exists
+        students = parent.student_id.all() 
+        print(students) # Fetch students related to this parent
 
         serializer = StudentSerializer(students, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
@@ -830,7 +960,7 @@ class ChatAPIView(APIView):
         serializer = ChatSerializer(data=data)
         if serializer.is_valid():
             serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+            return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 class ChattedUsersAPIView(APIView):
     # permission_classes = [IsAuthenticated]
@@ -873,6 +1003,27 @@ class StudentMentorListView(APIView):
     """API to get mentors for each student"""
 
     def get(self, request,st_id):
-        students = Student.objects.filter(id=st_id).all()
-        serializer = StudentMentorSerializer(students, many=True)
+        students = Student.objects.filter(id=st_id).first()
+        serializer = StudentMentorSerializer(students)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+
+class ExcludedStudentsAPIView(APIView):
+    def get(self, request, classroom_id):
+        try:
+            classroom = Classroom.objects.get(id=classroom_id)
+        except Classroom.DoesNotExist:
+            return Response({"error": "Classroom not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        # Get all students in the system
+        all_students = Student.objects.all()
+
+        # Get students in the classroom
+        included_students = classroom.students.all()
+
+        # Exclude students in the given classroom
+        excluded_students = all_students.exclude(id__in=included_students.values_list('id', flat=True))
+
+        serializer = StudentSerializer(excluded_students, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
